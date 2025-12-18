@@ -1,10 +1,14 @@
 using UnityEngine;
-using UnityEngine.AI; // Required for NavMeshAgent
+using UnityEngine.AI;
 
 public class Zombie : MonoBehaviour
 {
     [Header("Stats")]
     public float health = 3f;
+    public float damage = 10f;       // How hard the zombie hits
+    public float attackSpeed = 1f;   // Time between attacks (seconds)
+
+    private float nextAttackTime = 0f;
 
     [Header("References")]
     private Transform player;
@@ -13,37 +17,53 @@ public class Zombie : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        
-        // Automatically find the player so we don't have to drag references manually
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-        }
+        if (playerObj != null) player = playerObj.transform;
     }
 
     void Update()
     {
-        // Chase the player
         if (player != null)
         {
             agent.SetDestination(player.position);
         }
     }
 
-    // Public function for other scripts to call
+    // --- NEW: COLLISION ATTACK LOGIC ---
+    void OnCollisionStay(Collision collision)
+    {
+        // Check if we are touching the player
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            // Check if enough time has passed to attack again
+            if (Time.time >= nextAttackTime)
+            {
+                Attack(collision.gameObject);
+                nextAttackTime = Time.time + attackSpeed;
+            }
+        }
+    }
+
+    void Attack(GameObject target)
+    {
+        // Get the PlayerHealth script from the object we hit
+        PlayerHealth playerHealth = target.GetComponent<PlayerHealth>();
+        
+        if (playerHealth != null)
+        {
+            playerHealth.TakeDamage(damage);
+        }
+    }
+    // -----------------------------------
+
     public void TakeDamage(float amount)
     {
         health -= amount;
-        if (health <= 0)
-        {
-            Die();
-        }
+        if (health <= 0) Die();
     }
 
     void Die()
     {
-        // Logic for score or dropping items goes here later
         Destroy(gameObject);
     }
 }
