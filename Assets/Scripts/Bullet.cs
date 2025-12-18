@@ -19,12 +19,15 @@ public class Bullet : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        // Check if the object we hit has the "Zombie" script
-        Zombie zombie = other.GetComponent<Zombie>();
         
-        if (zombie != null)
+        if (other.CompareTag("Enemy"))
         {
-            zombie.TakeDamage(damage); // Deal damage
+            // Check if the object we hit has the "Zombie" script
+             Zombie zombie = other.GetComponent<Zombie>();
+            if(zombie != null)
+            {
+                zombie.TakeDamage(damage); // Deal damage
+            }
             Destroy(gameObject);       // Destroy the bullet
         }
         // Optional: Destroy bullet if it hits a wall/ground (but not the player)
