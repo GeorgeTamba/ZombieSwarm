@@ -1,5 +1,6 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Needed to restart the game
+using UnityEngine.UI; // Required for UI
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -7,15 +8,23 @@ public class PlayerHealth : MonoBehaviour
     public float maxHealth = 100f;
     private float currentHealth;
 
+    [Header("UI References")]
+    public Image healthBarFill; // Drag the RED image here
+
     void Start()
     {
         currentHealth = maxHealth;
+        UpdateHealthUI();
     }
 
     public void TakeDamage(float amount)
     {
         currentHealth -= amount;
-        Debug.Log($"Player Hit! Health: {currentHealth}");
+        
+        // Clamp prevents health from going below 0 or above Max
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        
+        UpdateHealthUI();
 
         if (currentHealth <= 0)
         {
@@ -23,10 +32,18 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    void UpdateHealthUI()
+    {
+        if (healthBarFill != null)
+        {
+            // Convert health to a 0.0 to 1.0 percentage
+            healthBarFill.fillAmount = currentHealth / maxHealth; 
+        }
+    }
+
     void Die()
     {
-        Debug.Log("GAME OVER");
-        // Simple "Game Over": Reload the current scene to restart
+        // Optional: Save High Score here later
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
