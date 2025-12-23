@@ -7,11 +7,13 @@ public class PlayerController : MonoBehaviour
     public float rotationSpeed = 720f;
 
     [Header("Controls")]
-    public Joystick moveJoystick;   // Left Stick (Movement)
-    public Joystick aimJoystick;    // Right Stick (Aim & Fire)
+    public Joystick moveJoystick;
+    public Joystick aimJoystick;
 
     [Header("References")]
     public Gun playerGun;
+    public Animator animator; // DRAG YOUR ANIMATOR HERE
+    
     private Rigidbody rb;
     private Vector3 movementInput;
     private Vector3 aimInput;
@@ -23,17 +25,15 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // 1. READ INPUT
-        // Combine Keyboard + Joystick for testing
+        // 1. INPUT
         float moveX = Input.GetAxisRaw("Horizontal") + moveJoystick.Horizontal;
         float moveZ = Input.GetAxisRaw("Vertical") + moveJoystick.Vertical;
         movementInput = new Vector3(moveX, 0f, moveZ).normalized;
 
-        // Read Aim Input (Right Stick or Arrow Keys for PC testing)
         float aimX = aimJoystick.Horizontal;
         float aimZ = aimJoystick.Vertical;
         
-        // Simple PC testing fallback (Arrow keys to aim)
+        // Keyboard Aim fallback
         if (Input.GetKey(KeyCode.RightArrow)) aimX = 1;
         if (Input.GetKey(KeyCode.LeftArrow)) aimX = -1;
         if (Input.GetKey(KeyCode.UpArrow)) aimZ = 1;
@@ -41,24 +41,51 @@ public class PlayerController : MonoBehaviour
 
         aimInput = new Vector3(aimX, 0f, aimZ).normalized;
 
-        // 2. SHOOTING LOGIC
-        // If the player is pushing the Aim Joystick, we Shoot.
+        // 2. SHOOTING
         if (aimInput.magnitude >= 0.1f)
         {
             if (playerGun != null) playerGun.TryShoot();
+        }
+
+        // 3. ANIMATION LOGIC (Crucial Step)
+        UpdateAnimator();
+    }
+
+    void UpdateAnimator()
+    {
+        if (animator == null) return;
+
+        // 1. Calculate Values
+        bool isAiming = aimInput.magnitude > 0.1f;
+        
+        // Speed is 0 to 1 based on how much you push the move stick
+        float currentSpeed = movementInput.magnitude; 
+
+        // 2. Send global state to Animator
+        animator.SetBool("IsAiming", isAiming);
+        animator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
+
+        // 3. Handle Strafing (Only matters if we are in Combat Mode)
+        if (isAiming)
+        {
+            // Calculate movement relative to where we are facing
+            Vector3 localMove = transform.InverseTransformDirection(movementInput);
+            
+            animator.SetFloat("InputX", localMove.x, 0.1f, Time.deltaTime);
+            animator.SetFloat("InputZ", localMove.z, 0.1f, Time.deltaTime);
         }
     }
 
     void FixedUpdate()
     {
-        // 3. MOVE
+        // 4. MOVE
         if (movementInput.magnitude >= 0.1f)
         {
             rb.MovePosition(rb.position + movementInput * moveSpeed * Time.fixedDeltaTime);
         }
 
-        // 4. ROTATE (Twin Stick Logic)
-        // Priority: If aiming, look at aim direction. If NOT aiming, look at move direction.
+        // 5. ROTATE
+        // Priority: Look at Aim. If not aiming, look at Movement.
         if (aimInput.magnitude >= 0.1f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(aimInput);
