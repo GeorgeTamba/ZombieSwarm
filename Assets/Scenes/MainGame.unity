@@ -394,6 +394,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 10
   rotationSpeed: 720
+  aimMovementPenalty: 0.3
   moveJoystick: {fileID: 2929252283979681676}
   aimJoystick: {fileID: 5768795861119179510}
   playerGun: {fileID: 383376472}
@@ -1575,6 +1576,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 2fa3323dedac69f41a3347a3b79d8b24, type: 2}
+    - target: {fileID: 5866666021909216657, guid: d3dbdd83c7ee2654e943b47ee9286684, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -5,6 +5,10 @@ public class PlayerController : MonoBehaviour
     [Header("Settings")]
     public float moveSpeed = 10f;
     public float rotationSpeed = 720f;
+    
+    // NEW: How fast we move when aiming (0.5 = 50% speed)
+    [Range(0.1f, 1f)]
+    public float aimMovementPenalty = 0.5f; 
 
     [Header("Controls")]
     public Joystick moveJoystick;
@@ -12,7 +16,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("References")]
     public Gun playerGun;
-    public Animator animator; // DRAG YOUR ANIMATOR HERE
+    public Animator animator; 
     
     private Rigidbody rb;
     private Vector3 movementInput;
@@ -33,7 +37,7 @@ public class PlayerController : MonoBehaviour
         float aimX = aimJoystick.Horizontal;
         float aimZ = aimJoystick.Vertical;
         
-        // Keyboard Aim fallback
+        // PC Testing Fallback
         if (Input.GetKey(KeyCode.RightArrow)) aimX = 1;
         if (Input.GetKey(KeyCode.LeftArrow)) aimX = -1;
         if (Input.GetKey(KeyCode.UpArrow)) aimZ = 1;
@@ -47,7 +51,7 @@ public class PlayerController : MonoBehaviour
             if (playerGun != null) playerGun.TryShoot();
         }
 
-        // 3. ANIMATION LOGIC (Crucial Step)
+        // 3. ANIMATION
         UpdateAnimator();
     }
 
@@ -55,22 +59,15 @@ public class PlayerController : MonoBehaviour
     {
         if (animator == null) return;
 
-        // 1. Calculate Values
         bool isAiming = aimInput.magnitude > 0.1f;
-        
-        // Speed is 0 to 1 based on how much you push the move stick
-        float currentSpeed = movementInput.magnitude; 
+        float currentSpeed = movementInput.magnitude;
 
-        // 2. Send global state to Animator
         animator.SetBool("IsAiming", isAiming);
         animator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
 
-        // 3. Handle Strafing (Only matters if we are in Combat Mode)
         if (isAiming)
         {
-            // Calculate movement relative to where we are facing
             Vector3 localMove = transform.InverseTransformDirection(movementInput);
-            
             animator.SetFloat("InputX", localMove.x, 0.1f, Time.deltaTime);
             animator.SetFloat("InputZ", localMove.z, 0.1f, Time.deltaTime);
         }
@@ -78,14 +75,23 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 4. MOVE
+        // 4. MOVE (UPDATED LOGIC)
         if (movementInput.magnitude >= 0.1f)
         {
-            rb.MovePosition(rb.position + movementInput * moveSpeed * Time.fixedDeltaTime);
+            // Start with base speed
+            float currentMoveSpeed = moveSpeed;
+
+            // If we are aiming, reduce the speed
+            if (aimInput.magnitude >= 0.1f)
+            {
+                currentMoveSpeed *= aimMovementPenalty;
+            }
+
+            // Apply movement
+            rb.MovePosition(rb.position + movementInput * currentMoveSpeed * Time.fixedDeltaTime);
         }
 
         // 5. ROTATE
-        // Priority: Look at Aim. If not aiming, look at Movement.
         if (aimInput.magnitude >= 0.1f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(aimInput);
