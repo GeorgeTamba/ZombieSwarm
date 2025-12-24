@@ -6,24 +6,23 @@ public class Zombie : MonoBehaviour
     [Header("Stats")]
     public float health = 3f;
     public float damage = 10f;
-    public float attackSpeed = 1.5f; // Slower than player shooting
+    public float attackSpeed = 1.5f; 
     private float nextAttackTime = 0f;
 
     [Header("References")]
-    public Animator animator;      // Drag the Animator here
-    public Collider bodyCollider;  // Drag the Capsule Collider here
+    public Animator animator;      
+    public Collider bodyCollider;  
     private Transform player;
     private NavMeshAgent agent;
     private bool isDead = false;
 
     [Header("Animation Sync")]
-    public float baseSpeed = 0.3f; // SET THIS to the speed that looked "perfect" before!
+    public float baseSpeed = 0.3f; // The speed where the walk animation looks correct
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         
-        // Find player automatically
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.transform;
     }
@@ -32,62 +31,78 @@ public class Zombie : MonoBehaviour
     {
         if (isDead) return;
 
-        // 1. CHASE PLAYER
         if (player != null)
         {
+            // 1. CHASE PLAYER
             agent.SetDestination(player.position);
-        }
 
-        // 2. ANIMATE MOVEMENT
-        if (animator != null)
-        {
-            float currentSpeed = agent.velocity.magnitude;
+            float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+            float attackRange = 1.5f; 
 
-            // A. The Blend Tree parameter (Switching from Idle to Walk)
-            animator.SetFloat("Speed", currentSpeed);
-
-            // B. The Multiplier (Speeding up the Walk animation)
-            // We use Mathf.Max(1, ...) to ensure Idle animation doesn't freeze or slow down
-            float multiplier = Mathf.Max(1f, currentSpeed / baseSpeed);
-            animator.SetFloat("WalkMultiplier", multiplier);
-        }
-    }
-
-    void OnCollisionStay(Collision collision)
-    {
-        if (isDead) return;
-
-        // Attack Logic
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            if (Time.time >= nextAttackTime)
+            // 2. DECIDE: ATTACK OR MOVE?
+            if (distanceToPlayer <= attackRange)
             {
-                Attack(collision.gameObject);
-                nextAttackTime = Time.time + attackSpeed;
+                // --- ATTACK MODE ---
+                
+                // Stop moving visually
+                if (animator != null) 
+                {
+                    animator.SetFloat("Speed", 0f);
+                    animator.SetFloat("WalkMultiplier", 1f);
+                }
+
+                // Check Cooldown
+                if (Time.time >= nextAttackTime)
+                {
+                    // Trigger the animation. 
+                    // The damage will be handled by the Animation Event later.
+                    if (animator != null) animator.SetTrigger("Attack");
+                    
+                    nextAttackTime = Time.time + attackSpeed; 
+                }
+            }
+            else
+            {
+                // --- MOVEMENT MODE ---
+                if (animator != null)
+                {
+                    float currentSpeed = agent.velocity.magnitude;
+                    
+                    // Sync "Idle vs Walk" Blend Tree
+                    animator.SetFloat("Speed", currentSpeed);
+                    
+                    // Sync Foot Sliding
+                    float multiplier = Mathf.Max(1f, currentSpeed / baseSpeed);
+                    animator.SetFloat("WalkMultiplier", multiplier);
+                }
             }
         }
     }
 
-    void Attack(GameObject target)
-    {
-        // Trigger Animation
-        if (animator != null) animator.SetTrigger("Attack");
+    // ---------------------------------------------------------
+    // PUBLIC EVENTS
+    // ---------------------------------------------------------
 
-        // Deal Damage
-        PlayerHealth playerHealth = target.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
+    // CALLED BY: ZombieAnimationRelay.cs (Triggered by Animation Event)
+    public void DealDamageEvent()
+    {
+        // Check if player is still in range to avoid "phantom hits"
+        if (player != null && Vector3.Distance(transform.position, player.position) <= 2.0f)
         {
-            playerHealth.TakeDamage(damage);
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);
+            }
         }
     }
 
+    // CALLED BY: Bullet.cs (or whatever deals damage to zombies)
     public void TakeDamage(float amount)
     {
         if (isDead) return;
 
         health -= amount;
-        
-        // Optional: Add a small "Flinch" animation here later?
 
         if (health <= 0) Die();
     }
@@ -96,15 +111,13 @@ public class Zombie : MonoBehaviour
     {
         isDead = true;
 
-        // 1. Play Animation
         if (animator != null) animator.SetTrigger("Die");
 
-        // 2. Disable Physics & Movement
-        agent.isStopped = true;       // Stop moving
-        agent.enabled = false;        // Turn off AI
-        bodyCollider.enabled = false; // Stop blocking bullets/player
+        // Disable Physics & AI
+        agent.isStopped = true;       
+        agent.enabled = false;        
+        bodyCollider.enabled = false; 
 
-        // 3. Destroy body after 5 seconds (so we can see the dead body for a bit)
         Destroy(gameObject, 5f);
     }
 }
