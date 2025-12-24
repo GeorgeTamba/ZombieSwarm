@@ -17,13 +17,13 @@ public class Bullet : MonoBehaviour
         transform.Translate(Vector3.forward * speed * Time.deltaTime);
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnCollisionEnter(Collision collision)
     {
         
-        if (other.CompareTag("Enemy"))
+        if (collision.gameObject.CompareTag("Enemy"))
         {
             // Check if the object we hit has the "Zombie" script
-             Zombie zombie = other.GetComponent<Zombie>();
+             Zombie zombie = collision.gameObject.GetComponent<Zombie>();
             if(zombie != null)
             {
                 zombie.TakeDamage(damage); // Deal damage
@@ -31,7 +31,7 @@ public class Bullet : MonoBehaviour
             Destroy(gameObject);       // Destroy the bullet
         }
         // Optional: Destroy bullet if it hits a wall/ground (but not the player)
-        else if (!other.CompareTag("Player")) 
+        else if (!collision.gameObject.CompareTag("Player")) 
         {
             Destroy(gameObject);
         }
