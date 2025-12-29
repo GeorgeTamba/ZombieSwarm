@@ -59,17 +59,36 @@ public class PlayerController : MonoBehaviour
     {
         if (animator == null) return;
 
+        // 1. Calculate values
         bool isAiming = aimInput.magnitude > 0.1f;
         float currentSpeed = movementInput.magnitude;
 
+        // 2. Base Layer Parameters (Legs/Movement)
         animator.SetBool("IsAiming", isAiming);
         animator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
 
         if (isAiming)
         {
+            // Strafing Logic for Base Layer
             Vector3 localMove = transform.InverseTransformDirection(movementInput);
             animator.SetFloat("InputX", localMove.x, 0.1f, Time.deltaTime);
             animator.SetFloat("InputZ", localMove.z, 0.1f, Time.deltaTime);
+        }
+
+        // 3. HANDLE UPPER BODY LAYER (The New Part)
+        // Layer 1 is our "ShootingLayer" (Indices start at 0)
+        if (isAiming)
+        {
+            // Turn on the Upper Body Shooting stance
+            // We use Mathf.Lerp for a smooth transition of the arms raising up
+            float currentWeight = animator.GetLayerWeight(1);
+            animator.SetLayerWeight(1, Mathf.Lerp(currentWeight, 1f, Time.deltaTime * 10f));
+        }
+        else
+        {
+            // Turn off the layer (Let the Base Layer control arms for running)
+            float currentWeight = animator.GetLayerWeight(1);
+            animator.SetLayerWeight(1, Mathf.Lerp(currentWeight, 0f, Time.deltaTime * 10f));
         }
     }
 
