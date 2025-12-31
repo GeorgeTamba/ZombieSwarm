@@ -21,10 +21,19 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     private Vector3 movementInput;
     private Vector3 aimInput;
+    private int speedHash;
+    private int isAimingHash;
+    private int inputXHash;
+    private int inputZHash;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        // Convert strings to integers ONCE
+        speedHash = Animator.StringToHash("Speed");
+        isAimingHash = Animator.StringToHash("IsAiming");
+        inputXHash = Animator.StringToHash("InputX");
+        inputZHash = Animator.StringToHash("InputZ");
     }
 
     void Update()
@@ -64,8 +73,8 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = movementInput.magnitude;
 
         // 2. Base Layer Parameters (Legs/Movement)
-        animator.SetBool("IsAiming", isAiming);
-        animator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
+        animator.SetBool(isAimingHash, isAiming);
+        animator.SetFloat(speedHash, currentSpeed, 0.1f, Time.deltaTime);
 
         if (isAiming)
         {
